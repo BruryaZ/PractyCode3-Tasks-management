@@ -83,6 +83,30 @@ var app = builder.Build();
 
 app.UseMiddleware<ErrorLoggingMiddleware>();
 
+// Global error handling
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
+
+        if (exceptionHandlerPathFeature?.Error != null)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exceptionHandlerPathFeature.Error, "Unhandled exception");
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = exceptionHandlerPathFeature.Error.Message,
+                stackTrace = exceptionHandlerPathFeature.Error.StackTrace
+            });
+        }
+    });
+});
+
 // Use CORS policy
 app.UseCors("AllowAllOrigins");
 
