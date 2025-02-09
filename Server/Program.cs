@@ -81,6 +81,8 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<ErrorLoggingMiddleware>();
+
 // Use CORS policy
 app.UseCors("AllowAllOrigins");
 
