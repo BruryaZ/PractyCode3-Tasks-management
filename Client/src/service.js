@@ -20,6 +20,7 @@ export default {
   },
 
   addTask: async (name) => {
+    console.log('API URL:', apiUrl);
     console.log('addTask', name)
     const result = await axios.post(`${apiUrl}/tasks`, { name })
     return result.data;
