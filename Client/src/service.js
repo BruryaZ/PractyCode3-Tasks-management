@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiUrl = "https://tasks-management-server-nnyn.onrender.com";
+const apiUrl = process.env.REACT_APP_API_URL
 console.log('API URL!!:', apiUrl);
 
 export default {
@@ -20,8 +20,6 @@ export default {
   },
 
   addTask: async (name) => {
-    console.log('API URL!!:', apiUrl);
-    console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
     console.log('addTask', name)
     const result = await axios.post(`${apiUrl}/tasks`, { name })
     return result.data;
