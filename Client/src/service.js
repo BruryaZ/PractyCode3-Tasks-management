@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const apiUrl = process.env.REACT_APP_API_URL;
+console.log('API URL:', apiUrl);
 
 export default {
   get: async () => {
@@ -10,9 +11,6 @@ export default {
 
   getTasks: async () => {
     const result = await axios.get(`${apiUrl}/tasks`)
-    debugger;
-    console.log("getTasks", result.data);
-    
     return result.data;
   },
 
