@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiUrl = `${process.env.REACT_APP_API_URL}`;
+const apiUrl = "https://tasks-management-server-nnyn.onrender.com";
 console.log('API URL!!:', apiUrl);
 
 export default {
