@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure the database context
 builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("tododb"), 
+    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"), 
     new MySqlServerVersion(new Version(8, 0, 21))));
 
 // Add CORS services
@@ -152,7 +152,7 @@ app.MapPost("/items", async (ToDoDbContext context, MyTask task) =>
 {
     context.Tasks.Add(task);
     await context.SaveChangesAsync();
-    return Results.Created($"/tasks/{task.Id}", task);
+    return Results.Created($"/items/{task.Id}", task);
 });
 
 // Route to update a task

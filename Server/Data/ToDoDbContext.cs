@@ -26,7 +26,7 @@ namespace TodoApi.Data
             {
                 entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-                entity.ToTable("tasks");
+                entity.ToTable("items");
 
                 entity.Property(e => e.Name).HasMaxLength(100);
             });
