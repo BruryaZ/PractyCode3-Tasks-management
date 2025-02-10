@@ -128,14 +128,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Route to get all tasks
-app.MapGet("/tasks", async (ToDoDbContext context) =>
+app.MapGet("/items", async (ToDoDbContext context) =>
 {
     return await context.Tasks.ToListAsync();
 });
 
 
 // Route to get task by id
-app.MapGet("/tasks/{id}", async (HttpContext httpContext, ToDoDbContext context) =>
+app.MapGet("/items/{id}", async (HttpContext httpContext, ToDoDbContext context) =>
 {
     if (!int.TryParse(httpContext.Request.RouteValues["id"]?.ToString(), out var id))
     {
@@ -148,7 +148,7 @@ app.MapGet("/tasks/{id}", async (HttpContext httpContext, ToDoDbContext context)
 });
 
 // Route to add a new task
-app.MapPost("/tasks", async (ToDoDbContext context, MyTask task) =>
+app.MapPost("/items", async (ToDoDbContext context, MyTask task) =>
 {
     context.Tasks.Add(task);
     await context.SaveChangesAsync();
@@ -156,7 +156,7 @@ app.MapPost("/tasks", async (ToDoDbContext context, MyTask task) =>
 });
 
 // Route to update a task
-app.MapPut("/tasks/{id}", async (int id, MyTask updatedTask, ToDoDbContext context) =>
+app.MapPut("/items/{id}", async (int id, MyTask updatedTask, ToDoDbContext context) =>
 {
     var task = await context.Tasks.FindAsync(id);
     if (task is null) return Results.NotFound();
@@ -168,7 +168,7 @@ app.MapPut("/tasks/{id}", async (int id, MyTask updatedTask, ToDoDbContext conte
 });
 
 // Route to delete a task
-app.MapDelete("/tasks/{id}", async (int id, ToDoDbContext context) =>
+app.MapDelete("/items/{id}", async (int id, ToDoDbContext context) =>
 {
     var task = await context.Tasks.FindAsync(id);
     if (task is null) return Results.NotFound();
