@@ -51,20 +51,6 @@ app.MapGet("/tasks/{id}", async (int id, ToDoDbContext db) =>
     return task is not null ? Results.Ok(task) : Results.NotFound();
 });
 
-// // Route to get task by id
-// app.MapGet("/tasks/{id}", async (HttpContext httpContext, ToDoDbContext context) =>
-// {
-//     if (!int.TryParse(httpContext.Request.RouteValues["id"]?.ToString(), out var id))
-//     {
-//         return Results.BadRequest();
-//     }
-
-//     var task = await context.Tasks.FindAsync(id);
-//     if (task is null) return Results.NotFound();
-//     return Results.Ok(task);
-// });
-
-
 // POST: להוסיף Task חדש
 app.MapPost("/tasks", async (Task task, ToDoDbContext db) =>
 {
@@ -74,14 +60,13 @@ app.MapPost("/tasks", async (Task task, ToDoDbContext db) =>
 });
 
 // PUT: לעדכן Task קיים
-app.MapPut("/tasks/{id}", async (int id, Task inputTask, ToDoDbContext db) =>
+app.MapPut("/tasks/{id}", async (int id, ToDoDbContext db) =>
 {
     var task = await db.Tasks.FindAsync(id);
 
     if (task is null) return Results.NotFound();
 
-    task.Name = inputTask.Name;
-    task.IsComplete = inputTask.IsComplete;
+    task.IsComplete = !task.IsComplete;
 
     await db.SaveChangesAsync();
     return Results.NoContent();

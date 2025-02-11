@@ -25,9 +25,9 @@ export default {
     return result.data;
   },
 
-  setCompleted: async (id, isComplete) => {
-    console.log('setCompleted', { id, isComplete })
-    const result = await axios.put(`${apiUrl}/tasks/${id}`, { isComplete })
+  setCompleted: async (id) => {
+    console.log('setCompleted', { id })
+    const result = await axios.put(`${apiUrl}/tasks/${id}`)
     return result.data;
   },
 
