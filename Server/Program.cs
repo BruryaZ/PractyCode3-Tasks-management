@@ -1,184 +1,88 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
-using System.Threading.Tasks;
-using TodoApi.Models;
-using TodoApi.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using TodoApi;
+using Task = TodoApi.Task;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure the database context
-builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"), 
-    new MySqlServerVersion(new Version(8, 0, 21))));
-
-// Add CORS services
+// הוסף את שירותי CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
 });
 
-// JWT Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"]
-    };
-});
-// Add Authorization
-builder.Services.AddAuthorization();
-
-// Add Swagger services
+// הוסף את שירותי Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Name = "Authorization",
-        Description = "Bearer Authentication with JWT Token",
-        Type = SecuritySchemeType.Http
-    });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Id = "Bearer",
-                    Type = ReferenceType.SecurityScheme
-                }
-            },
-            new string[] {}
-        }
-    });
-});
+builder.Services.AddSwaggerGen();
+
+// הוסף את ה-DbContext לשירותים
+builder.Services.AddDbContext<ToDoDbContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"), 
+    new MySqlServerVersion(new Version(6, 0, 21)))); 
 
 var app = builder.Build();
 
-app.UseMiddleware<ErrorLoggingMiddleware>();
-
-// Global error handling
-app.UseExceptionHandler(errorApp =>
+// השתמש ב-Swagger
+if (app.Environment.IsDevelopment())
 {
-    errorApp.Run(async context =>
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
     {
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json";
-
-        var exceptionHandlerPathFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>();
-
-        if (exceptionHandlerPathFeature?.Error != null)
-        {
-            var logger = app.Services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(exceptionHandlerPathFeature.Error, "Unhandled exception");
-
-            await context.Response.WriteAsJsonAsync(new
-            {
-                error = exceptionHandlerPathFeature.Error.Message,
-                stackTrace = exceptionHandlerPathFeature.Error.StackTrace
-            });
-        }
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+        c.RoutePrefix = string.Empty; 
     });
+}
+
+// הוסף את ה-CORS
+app.UseCors("AllowAll");
+
+app.MapGet("/", () => "Hello World!");
+
+// GET: לקבל את כל ה-Tasks
+app.MapGet("/tasks", async (ToDoDbContext db) =>
+    await db.Tasks.ToListAsync());
+
+// GET: לקבל Task לפי ID
+app.MapGet("/tasks/{id}", async (int id, ToDoDbContext db) =>
+    await db.Tasks.FindAsync(id) is Task Task
+        ? Results.Ok(Task)
+        : Results.NotFound());
+
+// POST: להוסיף Task חדש
+app.MapPost("/tasks", async (Task task, ToDoDbContext db) =>
+{
+    db.Tasks.Add(task);
+    await db.SaveChangesAsync();
+    return Results.Created($"/tasks/{task.Id}", task);
 });
 
-// Use CORS policy
-app.UseCors("AllowAllOrigins");
-
-// Enable Swagger middleware
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// PUT: לעדכן Task קיים
+app.MapPut("/tasks/{id}", async (int id, Task inputTask, ToDoDbContext db) =>
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    var Task = await db.Tasks.FindAsync(id);
+
+    if (Task is null) return Results.NotFound();
+
+    Task.Name = inputTask.Name;
+    Task.IsComplete = inputTask.IsComplete;
+
+    await db.SaveChangesAsync();
+    return Results.NoContent();
 });
 
-// Ensure HTTPS redirection is set up
-app.UseHttpsRedirection();
-
-// Ensure routing middleware is set up
-app.UseRouting();
-
-// Use authentication and authorization middleware
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Route to get all tasks
-app.MapGet("/items", async (ToDoDbContext context) =>
+// DELETE: למחוק Task לפי ID
+app.MapDelete("/tasks/{id}", async (int id, ToDoDbContext db) =>
 {
-    return await context.Tasks.ToListAsync();
-});
-
-
-// Route to get task by id
-app.MapGet("/items/{id}", async (HttpContext httpContext, ToDoDbContext context) =>
-{
-    if (!int.TryParse(httpContext.Request.RouteValues["id"]?.ToString(), out var id))
+    if (await db.Tasks.FindAsync(id) is Task Task)
     {
-        return Results.BadRequest();
+        db.Tasks.Remove(Task);
+        await db.SaveChangesAsync();
+        return Results.Ok(Task);
     }
 
-    var task = await context.Tasks.FindAsync(id);
-    if (task is null) return Results.NotFound();
-    return Results.Ok(task);
+    return Results.NotFound();
 });
-
-// Route to add a new task
-app.MapPost("/items", async (ToDoDbContext context, MyTask task) =>
-{
-    context.Tasks.Add(task);
-    await context.SaveChangesAsync();
-    return Results.Created($"/items/{task.Id}", task);
-});
-
-// Route to update a task
-app.MapPut("/items/{id}", async (int id, MyTask updatedTask, ToDoDbContext context) =>
-{
-    var task = await context.Tasks.FindAsync(id);
-    if (task is null) return Results.NotFound();
-
-    task.IsComplete = updatedTask.IsComplete; // Assuming there is a field named IsComplete
-    context.Tasks.Update(task);
-    await context.SaveChangesAsync();
-    return Results.NoContent();
-});
-
-// Route to delete a task
-app.MapDelete("/items/{id}", async (int id, ToDoDbContext context) =>
-{
-    var task = await context.Tasks.FindAsync(id);
-    if (task is null) return Results.NotFound();
-
-    context.Tasks.Remove(task);
-    await context.SaveChangesAsync();
-    return Results.NoContent();
-});
-
-// Home page
-app.MapGet("/", () => "A Task management tool API is running!!");
 
 app.Run();

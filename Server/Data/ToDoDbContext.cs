@@ -1,39 +1,50 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TodoApi.Models;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
-namespace TodoApi.Data
+
+namespace TodoApi;
+
+public partial class ToDoDbContext : DbContext
 {
-    public partial class ToDoDbContext : DbContext
+    public ToDoDbContext()
     {
-        public ToDoDbContext(DbContextOptions<ToDoDbContext> options)
-            : base(options)
-        {
-        }
-
-        public virtual DbSet<MyTask> Tasks { get; set; }
-        public virtual DbSet<User> Users { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder.UseMySql("name=ToDoDB", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.33-mysql"));
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder
-                .UseCollation("utf8mb4_0900_ai_ci")
-                .HasCharSet("utf8mb4");
-
-            modelBuilder.Entity<MyTask>(entity =>
-            {
-                entity.HasKey(e => e.Id).HasName("PRIMARY");
-
-                entity.ToTable("items");
-
-                entity.Property(e => e.Name).HasMaxLength(100);
-            });
-
-            OnModelCreatingPartial(modelBuilder);
-        }
-
-        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
+
+    public ToDoDbContext(DbContextOptions<ToDoDbContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<Item> Items { get; set; }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        var connectionString = "server=bhgwcwc3bukc00v1pwo2-mysql.services.clever-cloud.com;user=uosvwytrx5zpauiw;password=xTiCBkf9xwQLWEPKv5RC;database=bhgwcwc3bukc00v1pwo2";
+        optionsBuilder.UseMySql(connectionString, Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.22-mysql"));
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder
+            .UseCollation("utf8_general_ci")
+            .HasCharSet("utf8");
+
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
+
+            entity.ToTable("items");
+
+            entity.Property(e => e.Name).HasMaxLength(100);
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    internal Task SaveChangesAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

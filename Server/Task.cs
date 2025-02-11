@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TodoApi.Models
+namespace TodoApi
 {
-    public class MyTask
+    public partial class Task
     {
-        public int Id { get; set; }
-
+        public ulong Id { get; set; }
         public string? Name { get; set; }
-
         public bool? IsComplete { get; set; }
     }
 }
