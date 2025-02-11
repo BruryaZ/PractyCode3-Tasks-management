@@ -61,12 +61,12 @@ app.MapPost("/tasks", async (Task task, ToDoDbContext db) =>
 // PUT: לעדכן Task קיים
 app.MapPut("/tasks/{id}", async (int id, Task inputTask, ToDoDbContext db) =>
 {
-    var Task = await db.Tasks.FindAsync(id);
+    var task = await db.Tasks.FindAsync(id);
 
-    if (Task is null) return Results.NotFound();
+    if (task is null) return Results.NotFound();
 
-    Task.Name = inputTask.Name;
-    Task.IsComplete = inputTask.IsComplete;
+    task.Name = inputTask.Name;
+    task.IsComplete = inputTask.IsComplete;
 
     await db.SaveChangesAsync();
     return Results.NoContent();
@@ -75,11 +75,11 @@ app.MapPut("/tasks/{id}", async (int id, Task inputTask, ToDoDbContext db) =>
 // DELETE: למחוק Task לפי ID
 app.MapDelete("/tasks/{id}", async (int id, ToDoDbContext db) =>
 {
-    if (await db.Tasks.FindAsync(id) is Task Task)
+    if (await db.Tasks.FindAsync(id) is Task task)
     {
-        db.Tasks.Remove(Task);
+        db.Tasks.Remove(task);
         await db.SaveChangesAsync();
-        return Results.Ok(Task);
+        return Results.Ok(task);
     }
 
     return Results.NotFound();
