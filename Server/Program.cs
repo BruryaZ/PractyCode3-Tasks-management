@@ -19,8 +19,8 @@ builder.Services.AddSwaggerGen();
 
 // הוסף את ה-DbContext לשירותים
 builder.Services.AddDbContext<ToDoDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"), 
-    new MySqlServerVersion(new Version(6, 0, 21)))); 
+    options.UseMySql(builder.Configuration.GetConnectionString("ToDoDB"),
+    new MySqlServerVersion(new Version(6, 0, 21))));
 
 var app = builder.Build();
 
@@ -31,7 +31,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-        c.RoutePrefix = string.Empty; 
+        c.RoutePrefix = string.Empty;
     });
 }
 
@@ -46,9 +46,11 @@ app.MapGet("/tasks", async (ToDoDbContext db) =>
 
 // GET: לקבל Task לפי ID
 app.MapGet("/tasks/{id}", async (int id, ToDoDbContext db) =>
-    await db.Tasks.FindAsync(id) is Task Task
-        ? Results.Ok(Task)
-        : Results.NotFound());
+{
+    var task = await db.Tasks.FindAsync(id);
+    return task is not null ? Results.Ok(task) : Results.NotFound();
+});
+
 
 // POST: להוסיף Task חדש
 app.MapPost("/tasks", async (Task task, ToDoDbContext db) =>
